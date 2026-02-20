@@ -74,7 +74,7 @@ jobs:
           GOARCH: ${{ matrix.goarch }}
         run: |
           mkdir -p dist
-          go build -ldflags="-w -s" -o dist/flow-exporter-${{ matrix.goos }}-${{ matrix.goarch }}
+          go build -ldflags="-w -s" -o dist/pingo-${{ matrix.goos }}-${{ matrix.goarch }}
     
       - name: Upload Asset
         uses: actions/upload-release-asset@v1
@@ -82,7 +82,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./dist/flow-exporter-${{ matrix.goos }}-${{ matrix.goarch }}
-          asset_name: flow-exporter-${{ matrix.goos }}-${{ matrix.goarch }}
+          asset_path: ./dist/pingo-${{ matrix.goos }}-${{ matrix.goarch }}
+          asset_name: pingo-${{ matrix.goos }}-${{ matrix.goarch }}
           asset_content_type: application/octet-stream
         

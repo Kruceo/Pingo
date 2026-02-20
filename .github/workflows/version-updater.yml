@@ -30,6 +30,6 @@ jobs:
       - name: Push
         continue-on-error: true
         run: |
-          git add lib/version.go
+          git add cmd/version.go
           git commit -m '[Automated] update version'
           git push origin HEAD
