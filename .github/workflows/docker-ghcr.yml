@@ -44,12 +44,8 @@ jobs:
       - name: Get version from application
         id: app_version
         run: |
-          if [ "${{ github.event_name }}" = "release" ]; then
-            TAG_NAME="${{ github.event.release.tag_name }}"
-          else
-            # Para workflow_dispatch ou outros eventos, pega a versão do aplicativo
-            TAG_NAME=$(./pingo version 2>/dev/null || echo "latest")
-          fi
+          # Para workflow_dispatch ou outros eventos, pega a versão do aplicativo
+          TAG_NAME=$(./pingo version 2>/dev/null || echo "latest")
           echo "tag=${TAG_NAME}" >> $GITHUB_OUTPUT
       
       - name: Extract metadata (tags, labels)
@@ -58,10 +54,6 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=ref,event=tag
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
             type=raw,value=latest
             type=raw,value=${{ steps.app_version.outputs.tag }}
       
