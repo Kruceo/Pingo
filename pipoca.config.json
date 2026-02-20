@@ -1,0 +1,19 @@
+{
+  "keys": {
+    "patch": [
+      "fix","Improvement","improvement"
+    ],
+    "minor": [
+      "att","Feature","Feat","feature"
+    ],
+    "major": [
+      "new","Release","release"
+    ]
+  },
+  "commands": {
+    "before": [],
+    "after": [
+      "node scripts/update-version.mjs $version$"
+    ]
+  }
+}

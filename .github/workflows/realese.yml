@@ -1,0 +1,88 @@
+name: Build and Release
+
+on:
+  push:
+    branches: chore/*
+  workflow_dispatch: 
+  workflow_run: 
+    workflows: ["Version Updater"]
+    types: completed
+    branches: 
+      - chore/*
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  create-release:
+    name: Create the release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create-release.outputs.upload_url }}
+    steps:
+      - name: Clone
+        uses: actions/checkout@v3
+
+      - name: Setup Go 1.23
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.23"
+      
+      - name: Get Version
+        id: get-version
+        run: |
+          echo "version=$(go run main.go version)" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        id: create-release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.get-version.outputs.version }} # Tag that triggered the workflow
+          release_name: ${{  steps.get-version.outputs.version }}
+          body: "# What's new\n\n-"
+          draft: false
+          prerelease: false
+
+  build:
+    name: Build and Create Release
+    runs-on: ubuntu-latest
+    needs: create-release
+    strategy:
+      matrix:
+        goos: [linux,windows]        # Platforms to build for
+        goarch: [amd64,arm64]        # Architectures to support
+
+    steps:
+      # Step 1: Checkout the code
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Step 2: Setup Go environment
+      - name: Setup Go 1.23
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.23" # Set the Go version
+
+      # Step 3: Build the project
+      - name: Build for ${{ matrix.goos }}-${{ matrix.goarch }}
+        env:
+          CGO_ENABLED: "0"
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          mkdir -p dist
+          go build -ldflags="-w -s" -o dist/flow-exporter-${{ matrix.goos }}-${{ matrix.goarch }}
+    
+      - name: Upload Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./dist/flow-exporter-${{ matrix.goos }}-${{ matrix.goarch }}
+          asset_name: flow-exporter-${{ matrix.goos }}-${{ matrix.goarch }}
+          asset_content_type: application/octet-stream
+        
