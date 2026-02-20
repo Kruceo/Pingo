@@ -1,11 +1,8 @@
 name: Docker Build and Push - GitHub Container Registry
 
 on:
-  push:
-    branches: [ main, develop ]
-    tags: [ 'v*' ]
-  pull_request:
-    branches: [ main ]
+  release:
+    types: [published]
   workflow_dispatch:
 
 env:
@@ -36,22 +33,24 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       
+      - name: Get latest tag
+        id: latest_tag
+        run: |
+          LATEST_TAG=$(git describe --tags --abbrev=0)
+          echo "tag=${LATEST_TAG}" >> $GITHUB_OUTPUT
+      
       - name: Extract metadata (tags, labels)
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=ref,event=branch
-            type=ref,event=pr
+            type=ref,event=tag
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
-            type=sha,prefix={{branch}}-
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=match,pattern=\d+\.\d+\.\d+
-            type=match,pattern=\d+\.\d+
-            type=match,pattern=\d+
+            type=raw,value=latest
+            type=raw,value=${{ steps.latest_tag.outputs.tag }}
       
       - name: Build and push Docker image
         id: push
