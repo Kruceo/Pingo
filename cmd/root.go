@@ -7,9 +7,9 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "pinger",
-	Short: "A CLI smoke ping service",
-	Long:  "A CLI tool for performing smoke ping tests and storing metrics in ClickHouse",
+	Use:   "pingo",
+	Short: "A CLI ping service",
+	Long:  "A CLI tool for performing ping tests and storing metrics in ClickHouse",
 }
 
 func Execute() {

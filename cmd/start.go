@@ -12,8 +12,8 @@ import (
 
 var startCmd = &cobra.Command{
 	Use:   "start [config-file]",
-	Short: "Start the smoke ping service",
-	Long:  "Start the smoke ping service with the provided configuration file",
+	Short: "Start the ping service",
+	Long:  "Start the ping service with the provided configuration file",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		configFile := args[0]
