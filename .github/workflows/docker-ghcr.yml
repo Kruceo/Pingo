@@ -33,14 +33,22 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Get release tag
-        id: release_tag
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+      
+      - name: Build application
+        run: go build -o pingo .
+      
+      - name: Get version from application
+        id: app_version
         run: |
           if [ "${{ github.event_name }}" = "release" ]; then
             TAG_NAME="${{ github.event.release.tag_name }}"
           else
-            # Para workflow_dispatch ou outros eventos, pega a tag mais recente
-            TAG_NAME=$(git tag --sort=-version:refname | head -1 2>/dev/null || echo "latest")
+            # Para workflow_dispatch ou outros eventos, pega a versão do aplicativo
+            TAG_NAME=$(./pingo version 2>/dev/null || echo "latest")
           fi
           echo "tag=${TAG_NAME}" >> $GITHUB_OUTPUT
       
@@ -55,7 +63,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
             type=raw,value=latest
-            type=raw,value=${{ steps.release_tag.outputs.tag }}
+            type=raw,value=${{ steps.app_version.outputs.tag }}
       
       - name: Build and push Docker image
         id: push
