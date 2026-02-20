@@ -1,6 +1,6 @@
-# Pinger - CLI Smoke Ping Service
+# Pinger - CLI Ping Service
 
-A CLI service for connectivity monitoring (smoke ping) with metrics storage in ClickHouse.
+A CLI service for connectivity monitoring with metrics storage in ClickHouse.
 
 ## 🚀 Features
 
