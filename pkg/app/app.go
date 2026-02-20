@@ -83,7 +83,7 @@ func (a *Application) pingWorker(ctx context.Context, wg *sync.WaitGroup, cfg co
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			result, err := ping.Ping(ctx, cfg.Tool, cfg.Target, cfg.Timeout)
+			result, err := ping.Ping(ctx, cfg.Tool, cfg.Target, time.Duration(cfg.Timeout)*time.Millisecond)
 			if err != nil {
 				log.Printf("Ping failed for %s: %v", cfg.Target, err)
 			}

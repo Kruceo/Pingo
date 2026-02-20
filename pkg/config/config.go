@@ -3,16 +3,15 @@ package config
 import (
 	"encoding/json"
 	"os"
-	"time"
 
 	"github.com/joho/godotenv"
 )
 
 type PingConfig struct {
-	Name    string        `json:"name"`
-	Tool    string        `json:"tool"`
-	Target  string        `json:"target"`
-	Timeout time.Duration `json:"timeout"`
+	Name    string `json:"name"`
+	Tool    string `json:"tool"`
+	Target  string `json:"target"`
+	Timeout int    `json:"timeout"` // Timeout in milliseconds
 }
 
 type Config struct {
