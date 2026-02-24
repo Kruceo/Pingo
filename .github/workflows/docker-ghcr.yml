@@ -33,11 +33,20 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Get latest tag
-        id: latest_tag
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+      
+      - name: Build application
+        run: go build -o pingo .
+      
+      - name: Get version from application
+        id: app_version
         run: |
-          LATEST_TAG=$(git describe --tags --abbrev=0)
-          echo "tag=${LATEST_TAG}" >> $GITHUB_OUTPUT
+          # Para workflow_dispatch ou outros eventos, pega a versão do aplicativo
+          TAG_NAME=$(./pingo version 2>/dev/null || echo "latest")
+          echo "tag=${TAG_NAME}" >> $GITHUB_OUTPUT
       
       - name: Extract metadata (tags, labels)
         id: meta
@@ -45,12 +54,8 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=ref,event=tag
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
             type=raw,value=latest
-            type=raw,value=${{ steps.latest_tag.outputs.tag }}
+            type=raw,value=${{ steps.app_version.outputs.tag }}
       
       - name: Build and push Docker image
         id: push
