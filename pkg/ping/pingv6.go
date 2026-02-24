@@ -2,50 +2,16 @@ package ping
 
 import (
 	"context"
-	"net"
 	"time"
+
+	"github.com/go-ping/ping"
 )
 
 func PingV6(ctx context.Context, target string, timeout time.Duration) (*PingResult, error) {
 	start := time.Now()
 
-	conn, err := net.DialTimeout("ip6:ipv6-icmp", target, timeout)
-	if err != nil {
-		return &PingResult{
-			Target:    target,
-			Success:   false,
-			Duration:  time.Since(start),
-			Error:     err,
-			Timestamp: time.Now(),
-		}, err
-	}
-	defer conn.Close()
-
-	// Set deadline for the connection
-	conn.SetDeadline(time.Now().Add(timeout))
-
-	// Send ICMPv6 echo request
-	msg := make([]byte, 64)
-	msg[0] = 128 // ICMPv6 echo request
-	msg[1] = 0   // Code
-	msg[2] = 0   // Checksum (high byte)
-	msg[3] = 0   // Checksum (low byte)
-	msg[4] = 0   // Identifier (high byte)
-	msg[5] = 1   // Identifier (low byte)
-	msg[6] = 0   // Sequence number (high byte)
-	msg[7] = 1   // Sequence number (low byte)
-
-	// Fill the rest with some data (56 bytes to make 64 total)
-	for i := 8; i < 64; i++ {
-		msg[i] = byte(i)
-	}
-
-	// Calculate checksum
-	cs := checksum(msg)
-	msg[2] = byte(cs >> 8)
-	msg[3] = byte(cs & 0xff)
-
-	_, err = conn.Write(msg)
+	// Criar pinger
+	pinger, err := ping.NewPinger(target)
 	if err != nil {
 		return &PingResult{
 			Target:    target,
@@ -56,9 +22,20 @@ func PingV6(ctx context.Context, target string, timeout time.Duration) (*PingRes
 		}, err
 	}
 
-	// Read response
-	recv := make([]byte, 1024)
-	_, err = conn.Read(recv)
+	// Configurar para modo não privilegiado (não requer root)
+	pinger.SetPrivileged(false)
+
+	// Configurar timeout
+	pinger.Timeout = timeout
+
+	// Configurar para IPv6
+	pinger.SetNetwork("udp6")
+
+	// Realizar apenas 1 ping
+	pinger.Count = 1
+
+	// Executar o ping
+	err = pinger.Run()
 	if err != nil {
 		return &PingResult{
 			Target:    target,
@@ -68,10 +45,16 @@ func PingV6(ctx context.Context, target string, timeout time.Duration) (*PingRes
 			Timestamp: time.Now(),
 		}, err
 	}
+
+	// Obter estatísticas
+	stats := pinger.Statistics()
+
+	// Verificar se houve resposta
+	success := stats.PacketsRecv > 0
 
 	return &PingResult{
 		Target:    target,
-		Success:   true,
+		Success:   success,
 		Duration:  time.Since(start),
 		Error:     nil,
 		Timestamp: time.Now(),
