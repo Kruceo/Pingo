@@ -10,9 +10,9 @@ import (
 	"syscall"
 	"time"
 
-	"pingo/pkg/config"
-	"pingo/pkg/ping"
-	"pingo/pkg/storage"
+	"pingo/core/config"
+	"pingo/core/ping"
+	"pingo/core/storage"
 )
 
 type Application struct {

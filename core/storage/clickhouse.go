@@ -2,7 +2,7 @@ package storage
 
 import (
 	"context"
-	"pingo/pkg/config"
+	"pingo/core/config"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"

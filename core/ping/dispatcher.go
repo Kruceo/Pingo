@@ -6,6 +6,24 @@ import (
 	"time"
 )
 
+var supportedTools = map[string]struct{}{
+	"pingv4": {},
+	"pingv6": {},
+}
+
+func IsSupportedTool(tool string) bool {
+	_, ok := supportedTools[tool]
+	return ok
+}
+
+func SupportedTools() []string {
+	out := make([]string, 0, len(supportedTools))
+	for tool := range supportedTools {
+		out = append(out, tool)
+	}
+	return out
+}
+
 // Ping dispatches to the appropriate ping function based on the tool type
 func Ping(ctx context.Context, tool, target string, timeout time.Duration) (*PingResult, error) {
 	switch tool {

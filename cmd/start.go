@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"pingo/pkg/app"
-	"pingo/pkg/config"
+	"pingo/core/app"
+	"pingo/core/config"
 
 	"github.com/spf13/cobra"
 )
@@ -18,19 +18,19 @@ var startCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		configFile := args[0]
 
-		config, err := config.LoadConfig(configFile)
+		cfg, err := config.LoadConfig(configFile)
 		if err != nil {
 			fmt.Printf("Error loading config: %v\n", err)
 			os.Exit(1)
 		}
 
-		app, err := app.NewApplication(config)
+		application, err := app.NewApplication(cfg)
 		if err != nil {
 			fmt.Printf("Error creating application: %v\n", err)
 			os.Exit(1)
 		}
 
-		if err := app.Run(); err != nil {
+		if err := application.Run(); err != nil {
 			fmt.Printf("Error running application: %v\n", err)
 			os.Exit(1)
 		}
