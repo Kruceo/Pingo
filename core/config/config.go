@@ -1,11 +1,9 @@
 package config
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/joho/godotenv"
@@ -53,14 +51,12 @@ func SaveConfig(filename string, cfg *Config) error {
 	}
 	data = append(data, '\n')
 
-	dir := filepath.Dir(filename)
-
 	perm := os.FileMode(0o644)
 	if st, err := os.Stat(filename); err == nil {
 		perm = st.Mode()
 	}
 
-	tmpFile, err := os.CreateTemp(dir, ".pingo-config-*.json")
+	tmpFile, err := os.CreateTemp("", "pingo-config-*.json")
 	if err != nil {
 		return err
 	}
@@ -74,7 +70,7 @@ func SaveConfig(filename string, cfg *Config) error {
 		return err
 	}
 
-	if _, err := bytes.NewBuffer(data).WriteTo(tmpFile); err != nil {
+	if _, err := tmpFile.Write(data); err != nil {
 		_ = tmpFile.Close()
 		return err
 	}
@@ -86,7 +82,14 @@ func SaveConfig(filename string, cfg *Config) error {
 		return err
 	}
 
-	return os.Rename(tmpName, filename)
+	// Tenta renomear (atômico se estiver no mesmo filesystem)
+	err = os.Rename(tmpName, filename)
+	if err == nil {
+		return nil
+	}
+
+	// Fallback: se falhar (ex: cross-device link), usa WriteFile direto
+	return os.WriteFile(filename, data, perm)
 }
 
 func ValidatePingConfig(item PingConfig) error {
