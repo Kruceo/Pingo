@@ -2,10 +2,12 @@ name: Version Updater
 
 on:
   workflow_dispatch: 
-  push:
-    branches:
-      - main
+  workflow_run: 
+    workflows: ["Version Updater"]
+    types: completed
+    branches: 
       - chore/*
+      - main
 permissions:
   contents: write
 jobs:

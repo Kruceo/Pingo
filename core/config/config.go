@@ -21,6 +21,14 @@ type Config struct {
 	Items        []PingConfig `json:"items"`
 }
 
+var OnUpdate = func() {
+
+}
+
+func SetOnUpdateHandler(fun func()) {
+	OnUpdate = fun
+}
+
 func LoadConfig(filename string) (*Config, error) {
 	// Load environment variables from .env file (if exists)
 	godotenv.Load()
@@ -84,12 +92,16 @@ func SaveConfig(filename string, cfg *Config) error {
 
 	// Tenta renomear (atômico se estiver no mesmo filesystem)
 	err = os.Rename(tmpName, filename)
-	if err == nil {
-		return nil
+	if err != nil {
+		// Fallback: se falhar (ex: cross-device link), usa WriteFile direto
+		if err := os.WriteFile(filename, data, perm); err != nil {
+			return err
+		}
 	}
 
-	// Fallback: se falhar (ex: cross-device link), usa WriteFile direto
-	return os.WriteFile(filename, data, perm)
+	// Dispara o handler de atualização configurado
+	OnUpdate()
+	return nil
 }
 
 func ValidatePingConfig(item PingConfig) error {

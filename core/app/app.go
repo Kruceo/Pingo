@@ -18,6 +18,10 @@ import (
 type Application struct {
 	config  *config.Config
 	storage *storage.ClickHouseStorage
+	mu      sync.Mutex
+	ctx     context.Context
+	cancel  context.CancelFunc
+	wg      *sync.WaitGroup
 }
 
 func NewApplication(cfg *config.Config) (*Application, error) {
@@ -35,6 +39,7 @@ func NewApplication(cfg *config.Config) (*Application, error) {
 	return &Application{
 		config:  cfg,
 		storage: store,
+		wg:      &sync.WaitGroup{},
 	}, nil
 }
 
@@ -43,25 +48,21 @@ func (a *Application) Run() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	a.mu.Lock()
+	a.ctx = ctx
+	a.cancel = cancel
+	a.mu.Unlock()
+
+	a.startWorkers()
+
+	// Wait for termination signal
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
-	var wg sync.WaitGroup
+	sig := <-sigChan
+	log.Printf("Received signal: %v. Shutting down...", sig)
 
-	// Start ping workers for each target
-	for _, item := range a.config.Items {
-		wg.Add(1)
-		go a.pingWorker(ctx, &wg, item)
-	}
-
-	// Wait for termination signal
-	select {
-	case sig := <-sigChan:
-		log.Printf("Received signal: %v. Shutting down...", sig)
-		cancel()
-	}
-
-	wg.Wait()
+	a.stopWorkers()
 
 	// Close storage connection
 	if err := a.storage.Close(); err != nil {
@@ -69,6 +70,47 @@ func (a *Application) Run() error {
 	}
 
 	return nil
+}
+
+func (a *Application) startWorkers() {
+	a.mu.Lock()
+	ctx := a.ctx
+	cfg := a.config
+	a.mu.Unlock()
+
+	for _, item := range cfg.Items {
+		a.wg.Add(1)
+		go a.pingWorker(ctx, a.wg, item)
+	}
+}
+
+func (a *Application) stopWorkers() {
+	a.mu.Lock()
+	cancel := a.cancel
+	a.mu.Unlock()
+
+	if cancel != nil {
+		cancel()
+	}
+	a.wg.Wait()
+}
+
+func (a *Application) UpdateConfig(newCfg *config.Config) {
+	a.mu.Lock()
+	a.config = newCfg
+	a.mu.Unlock()
+
+	log.Println("Configuration updated, restarting workers...")
+	a.stopWorkers()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	a.mu.Lock()
+	a.ctx = ctx
+	a.cancel = cancel
+	a.mu.Unlock()
+
+	a.startWorkers()
+	log.Println("Workers restarted with new configuration")
 }
 
 func (a *Application) pingWorker(ctx context.Context, wg *sync.WaitGroup, cfg config.PingConfig) {
