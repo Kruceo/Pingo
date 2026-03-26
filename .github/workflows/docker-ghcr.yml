@@ -1,8 +1,12 @@
 name: Docker Build and Push - GitHub Container Registry
 
 on:
-  release:
-    types: [published]
+  workflow_run: 
+    workflows: ["Version Updater"]
+    types: completed
+    branches: 
+      - chore/*
+      - main
   workflow_dispatch:
 
 env:
